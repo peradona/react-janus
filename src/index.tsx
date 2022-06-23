@@ -1,8 +1,8 @@
-// import React from "react";
-import { useJanusHelper } from './helpers'
+import React from "react";
+// import { useJanusHelper } from './helpers'
 
-// const SayHello = ({ name }: { name: string }): JSX.Element => (
-//     <div>Hey {name}, go hello to TypeScript.</div>
-// );
+const SayHello = ({ name }: { name: string }): JSX.Element => (
+    <div>Hey {name}, go hello to TypeScript.</div>
+);
 
-export { useJanusHelper }
+export { SayHello }

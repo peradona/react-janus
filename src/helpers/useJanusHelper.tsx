@@ -1,4 +1,5 @@
 import {useEffect, useState} from 'react';
+import "../utils/janus";
 import {JanusStatus, ConnectionState} from "../constants";
 
 type JanusHelperProps = {
@@ -22,19 +23,17 @@ const useJanusHelper = (props: JanusHelperProps) => {
 
         let janus: any;
 
-        //@ts-ignore
-        window.Janus.init({debug: "all", callback: function() {
+        Janus.init({debug: "all", callback: function() {
                 //@ts-ignore
-                window.Janus.unifiedPlan = false;
-                //@ts-ignore
-                if(!window.Janus.isWebrtcSupported()) {
+                Janus.unifiedPlan = false;
+
+                if(!Janus.isWebrtcSupported()) {
                     console.log("No WebRTC support... ");
                     setIsWebrtcSupported(false);
                     return;
                 }
 
-                //@ts-ignore
-                janus = new window.Janus(
+                janus = new Janus(
                     {
                         server: props.server,
                         success: function() {
@@ -42,9 +41,8 @@ const useJanusHelper = (props: JanusHelperProps) => {
                             setJanusState(JanusStatus.Success);
                         },
                         error: function(error: any) {
-                            //@ts-ignore
-                            window.Janus.error(error);
-                            console.log("Janus error");
+                            // Janus.error(error);
+                            console.log("Janus error", error);
                             setJanusInstance(null);
                             setJanusState(JanusStatus.Error)
                         },
@@ -58,12 +56,11 @@ const useJanusHelper = (props: JanusHelperProps) => {
 
         return () => {
             try {
-                //@ts-ignore
-                window.Janus.log("[Destroy janus instance]")
+                // Janus.log("[Destroy janus instance]")
                 janus.destroy();
             } catch (e) {
                 //@ts-ignore
-                window.Janus.error('[Destroy janus instance Err]', e);
+                // window.Janus.error('[Destroy janus instance Err]', e);
             }
         }
     }, [props.server, props.socketState])
