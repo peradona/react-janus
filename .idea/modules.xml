@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/react-janus.iml" filepath="$PROJECT_DIR$/.idea/react-janus.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../react-janus-client-side/.idea/react-janus-client-side.iml" filepath="$PROJECT_DIR$/../react-janus-client-side/.idea/react-janus-client-side.iml" />
     </modules>
   </component>
 </project>
