@@ -1,5 +1,5 @@
 import {useEffect, useState} from 'react';
-import {JanusStatus, ConnectionState} from "../utils/janus.utils";
+import {JanusStatus, ConnectionState} from "../constants";
 
 type JanusHelperProps = {
     server: string,
