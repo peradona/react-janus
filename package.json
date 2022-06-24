@@ -2,7 +2,7 @@
   "name": "react-janus-client-side",
   "description": "Janus react component",
   "author": "Peradona",
-  "version": "0.1.22",
+  "version": "0.2.0",
   "main": "./lib/cjs/index.js",
   "module": "./lib/esm/index.js",
   "types": "./lib/esm/index.d.ts",
@@ -11,7 +11,8 @@
     "build": "yarn build:esm && yarn build:cjs",
     "build:esm": "tsc",
     "build:cjs": "tsc --module commonjs --outDir lib/cjs",
-    "prepublishOnly": "yarn build"
+    "prepublishOnly": "yarn build",
+    "test": "react-scripts test"
   },
   "peerDependencies": {
     "react": "^16.0.0",
@@ -20,13 +21,16 @@
   "devDependencies": {
     "@testing-library/jest-dom": "^5.16.4",
     "@testing-library/react": "^13.3.0",
+    "@testing-library/react-hooks": "^8.0.1",
     "@testing-library/user-event": "^13.5.0",
     "@types/jest": "^27.5.2",
     "@types/react": "^18.0.14",
     "@types/react-dom": "^18.0.5",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "typescript": "^4.7.4"
+    "react-scripts": "5.0.1",
+    "typescript": "^4.7.4",
+    "webrtc-adapter": "^8.1.1"
   },
   "files": [
     "/lib"

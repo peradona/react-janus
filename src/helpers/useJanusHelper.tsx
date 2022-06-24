@@ -1,71 +1,80 @@
 import {useEffect, useState} from 'react';
-import "../utils/janus";
+import Janus from "../utils/janus";
 import {JanusStatus, ConnectionState} from "../constants";
 
 type JanusHelperProps = {
     server: string,
     useSocket: boolean,
     socketState: ConnectionState,
+    Janus?: any
 }
 
 const useJanusHelper = (props: JanusHelperProps) => {
 
     const [janusInstance, setJanusInstance] = useState<any>();
-    const [janusState, setJanusState] = useState<JanusStatus>(JanusStatus.None);
+    const [janusStatus, setJanusStatus] = useState<JanusStatus>(JanusStatus.None);
+    const [janusErrorMsg, setJanusErrorMsg] = useState<string>();
 
-    const [isWebrtcSupported, setIsWebrtcSupported] = useState<boolean>(true);
+    const [isWebrtcSupported, setIsWebrtcSupported] = useState<boolean>();
 
     //Initial janus
     useEffect(() => {
         if (!props.server || (props.socketState !== ConnectionState.Connected && props.useSocket)) return;
 
-        setJanusState(JanusStatus.Connecting);
+        setJanusStatus(JanusStatus.Connecting);
 
         let janus: any;
+        let JanusJS: any = Janus;
 
-        Janus.init({debug: "all", callback: function() {
+        if (props.Janus) {
+            JanusJS = props.Janus
+        }
+
+        JanusJS.init({debug: "all", callback: function() {
                 //@ts-ignore
-                Janus.unifiedPlan = false;
+                JanusJS.unifiedPlan = false;
 
-                if(!Janus.isWebrtcSupported()) {
-                    console.log("No WebRTC support... ");
+                if(!JanusJS.isWebrtcSupported()) {
+                    // console.log("No WebRTC support... ");
                     setIsWebrtcSupported(false);
-                    return;
+                } else {
+                    setIsWebrtcSupported(true);
                 }
 
-                janus = new Janus(
+                janus = new JanusJS(
                     {
                         server: props.server,
                         success: function() {
                             setJanusInstance(janus);
-                            setJanusState(JanusStatus.Success);
+                            setJanusStatus(JanusStatus.Success);
                         },
-                        error: function(error: any) {
-                            // Janus.error(error);
-                            console.log("Janus error", error);
+                        error: function(error: string) {
+                            setJanusErrorMsg(error);
                             setJanusInstance(null);
-                            setJanusState(JanusStatus.Error)
+                            setJanusStatus(JanusStatus.Error)
                         },
                         destroyed: function() {
-                            console.log("Janus destroyed");
                             setJanusInstance(null);
-                            setJanusState(JanusStatus.Destroyed)
+                            setJanusStatus(JanusStatus.Destroyed)
                         }
                     });
             }});
 
         return () => {
             try {
-                // Janus.log("[Destroy janus instance]")
                 janus.destroy();
             } catch (e) {
-                //@ts-ignore
-                // window.Janus.error('[Destroy janus instance Err]', e);
+
             }
         }
     }, [props.server, props.socketState])
 
-    return { janusInstance, janusState, isWebrtcSupported }
+    return {
+        janusInstance,
+        janusStatus,
+        janusErrorMsg,
+        isWebrtcSupported
+    }
 }
 
 export default useJanusHelper;

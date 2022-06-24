@@ -1,3 +1,4 @@
+import Janus from "../janus";
 export const attachAudioBridge = (janus, opaqueId, room, secret,
                               pin, username, isPublisher, callback) => {
     let mixerPlugin = null;
@@ -12,41 +13,41 @@ export const attachAudioBridge = (janus, opaqueId, room, secret,
             opaqueId: opaqueId,
             success: function(pluginHandle) {
                 mixerPlugin = pluginHandle;
-                window.Janus.log("Plugin attached! (" + mixerPlugin.getPlugin() + ", id=" + mixerPlugin.getId() + ")");
+                Janus.log("Plugin attached! (" + mixerPlugin.getPlugin() + ", id=" + mixerPlugin.getId() + ")");
                 callback(mixerPlugin, "success", true);
             },
             error: function(error) {
-                window.Janus.error("  -- Error attaching plugin...", error);
+                Janus.error("  -- Error attaching plugin...", error);
                 callback(mixerPlugin, "error", error);
             },
             consentDialog: function(on) {
-                window.Janus.debug("Consent dialog should be " + (on ? "on" : "off") + " now");
+                Janus.debug("Consent dialog should be " + (on ? "on" : "off") + " now");
                 callback(mixerPlugin, "consentDialog", on);
             },
             onmessage: function(msg, jsep) {
-                window.Janus.debug(" ::: Got a message :::");
-                window.Janus.debug(msg);
+                Janus.debug(" ::: Got a message :::");
+                Janus.debug(msg);
                 let event = msg["audiobridge"];
-                window.Janus.debug("Event: " + event);
+                Janus.debug("Event: " + event);
                 if(event) {
                     if(event === "joined") {
                         if (msg["id"]) {
-                            window.Janus.log("Successfully joined room " + msg["room"] + " with ID " + msg["id"]);
+                            Janus.log("Successfully joined room " + msg["room"] + " with ID " + msg["id"]);
                         }
                         callback(mixerPlugin, "joined", msg)
                         
                         // Any room participant?
                         if(msg["participants"]) {
                             let list = msg["participants"];
-                            window.Janus.debug("Got a list of participants:");
-                            window.Janus.debug(list);
+                            Janus.debug("Got a list of participants:");
+                            Janus.debug(list);
 
                             // for(let f in list) {
                             //     let id = list[f]["id"];
                             //     let display = list[f]["display"];
                             //     let setup = list[f]["setup"];
                             //     let muted = list[f]["muted"];
-                            //     window.Janus.debug("  >> [" + id + "] " + display + " (setup=" + setup + ", muted=" + muted + ")");
+                            //     Janus.debug("  >> [" + id + "] " + display + " (setup=" + setup + ", muted=" + muted + ")");
                             //     if($('#rp'+id).length === 0) {
                             //         // Add to the participants list
                             //         $('#list').append('<li id="rp'+id+'" class="list-group-item">'+display+
@@ -67,20 +68,20 @@ export const attachAudioBridge = (janus, opaqueId, room, secret,
                     } else if(event === "roomchanged") {
                         // The user switched to a different room
                         // myid = msg["id"];
-                        window.Janus.log("Moved to room " + msg["room"] + ", new ID: " + msg["id"]);
+                        Janus.log("Moved to room " + msg["room"] + ", new ID: " + msg["id"]);
                         callback(mixerPlugin, "roomchanged", event);
                         // Any room participant?
                         // $('#list').empty();
                         // if(msg["participants"] !== undefined && msg["participants"] !== null) {
                         //     var list = msg["participants"];
-                        //     window.Janus.debug("Got a list of participants:");
-                        //     window.Janus.debug(list);
+                        //     Janus.debug("Got a list of participants:");
+                        //     Janus.debug(list);
                         //     for(var f in list) {
                         //         var id = list[f]["id"];
                         //         var display = list[f]["display"];
                         //         var setup = list[f]["setup"];
                         //         var muted = list[f]["muted"];
-                        //         window.Janus.debug("  >> [" + id + "] " + display + " (setup=" + setup + ", muted=" + muted + ")");
+                        //         Janus.debug("  >> [" + id + "] " + display + " (setup=" + setup + ", muted=" + muted + ")");
                         //         if($('#rp'+id).length === 0) {
                         //             // Add to the participants list
                         //             $('#list').append('<li id="rp'+id+'" class="list-group-item">'+display+
@@ -99,13 +100,13 @@ export const attachAudioBridge = (janus, opaqueId, room, secret,
                         //     }
                         // }
                     } else if(event === "destroyed") {
-                        window.Janus.warn("The room has been destroyed!");
+                        Janus.warn("The room has been destroyed!");
                         callback(mixerPlugin, "destroyed", msg)
                     } else if(event === "event") {
                         if(msg["participants"]) {
                             let list = msg["participants"];
-                            window.Janus.debug("Got a list of participants:");
-                            window.Janus.debug(list);
+                            Janus.debug("Got a list of participants:");
+                            Janus.debug(list);
                             callback(mixerPlugin, "participants", msg);
                         } else if(msg["error"]) {
                             callback(mixerPlugin, "event error", msg);
@@ -115,27 +116,27 @@ export const attachAudioBridge = (janus, opaqueId, room, secret,
                         if(msg["leaving"]) {
                             // One of the participants has gone away?
                             let leaving = msg["leaving"];
-                            window.Janus.log("Participant left: " + leaving + " (we have " + ('#rp'+leaving).length + " elements with ID #rp" +leaving + ")");
+                            Janus.log("Participant left: " + leaving + " (we have " + ('#rp'+leaving).length + " elements with ID #rp" +leaving + ")");
                             callback(mixerPlugin, "leaving", msg);
                             // $('#rp'+leaving).remove();
                         }
                     } else if(event === "talking") {
-                        // window.Janus.log("Participant talking", msg);
+                        // Janus.log("Participant talking", msg);
                         callback(mixerPlugin, "talking", msg);
                     } else if(event === "stopped-talking") {
-                        // window.Janus.log("Participant stopped talking", msg);
+                        // Janus.log("Participant stopped talking", msg);
                         callback(mixerPlugin, "stopped-talking", msg);
                     }
                 }
                 if (jsep) {
-                    window.Janus.debug("Handling SDP as well...");
-                    window.Janus.debug(jsep);
+                    Janus.debug("Handling SDP as well...");
+                    Janus.debug(jsep);
                     mixerPlugin.handleRemoteJsep({jsep: jsep});
                 }
             },
             onlocalstream: function(stream) {
-                window.Janus.debug(" ::: Got a local stream :::");
-                window.Janus.debug(stream);
+                Janus.debug(" ::: Got a local stream :::");
+                Janus.debug(stream);
                 callback(mixerPlugin, "onlocalstream", stream);
             },
             onremotestream: function(stream) {
@@ -148,7 +149,7 @@ export const attachAudioBridge = (janus, opaqueId, room, secret,
                 //     addButtons = true;
                 //     $('#mixedaudio').append('<audio class="rounded centered" id="roomaudio" width="100%" height="100%" autoplay playsinline/>');
                 // }
-                // window.Janus.attachMediaStream($('#roomaudio').get(0), stream);
+                // Janus.attachMediaStream($('#roomaudio').get(0), stream);
                 // if(!addButtons)
                 //     return;
                 // Mute button
@@ -167,7 +168,7 @@ export const attachAudioBridge = (janus, opaqueId, room, secret,
             oncleanup: function() {
                 // TODO
                 // webrtcUp = false;
-                window.Janus.log(" ::: [AudioBridge] Got a cleanup notification :::");
+                Janus.log(" ::: [AudioBridge] Got a cleanup notification :::");
                 callback(mixerPlugin, "oncleanup");
             }
         });
@@ -191,14 +192,14 @@ export const publishAudio = (mixerPlugin, muted = false, callback) => {
         {
             media: { video: false },	// This is an audio only room
             success: function(jsep) {
-                window.Janus.debug("Got SDP!");
-                window.Janus.debug(jsep);
+                Janus.debug("Got SDP!");
+                Janus.debug(jsep);
                 let publish = { "request": "configure", "muted": muted };
                 mixerPlugin.send({"message": publish, "jsep": jsep});
                 callback("success", muted);
             },
             error: function(error) {
-                window.Janus.error("WebRTC error:", error);
+                Janus.error("WebRTC error:", error);
                 callback("error", error);
             }
         });

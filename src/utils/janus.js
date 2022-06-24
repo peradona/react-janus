@@ -21,7 +21,8 @@
 	ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 	OTHER DEALINGS IN THE SOFTWARE.
  */
-
+/* eslint-disable */
+import adapter from 'webrtc-adapter';
 // List of sessions
 Janus.sessions = {};
 
@@ -3632,3 +3633,5 @@ function Janus(gatewayCallbacks) {
 		return (trickle === false) ? false : true;
 	}
 }
+
+export default Janus
