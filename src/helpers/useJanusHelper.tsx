@@ -6,10 +6,10 @@ type JanusHelperProps = {
     server: string,
     useSocket: boolean,
     socketState: ConnectionState,
-    Janus?: any
+    JanusModule?: any
 }
 
-const useJanusHelper = (props: JanusHelperProps) => {
+const useJanusHelper = ({ server, useSocket, socketState, JanusModule = Janus}: JanusHelperProps) => {
 
     const [janusInstance, setJanusInstance] = useState<any>();
     const [janusStatus, setJanusStatus] = useState<JanusStatus>(JanusStatus.None);
@@ -19,46 +19,42 @@ const useJanusHelper = (props: JanusHelperProps) => {
 
     //Initial janus
     useEffect(() => {
-        if (!props.server || (props.socketState !== ConnectionState.Connected && props.useSocket)) return;
+        if (!server || (socketState !== ConnectionState.Connected && useSocket)) return;
 
         setJanusStatus(JanusStatus.Connecting);
 
         let janus: any;
-        let JanusJS: any = Janus;
 
-        if (props.Janus) {
-            JanusJS = props.Janus
-        }
+        JanusModule.init({
+            debug: "all", callback: function () {
 
-        JanusJS.init({debug: "all", callback: function() {
-                //@ts-ignore
-                JanusJS.unifiedPlan = false;
+                JanusModule.unifiedPlan = false;
 
-                if(!JanusJS.isWebrtcSupported()) {
-                    // console.log("No WebRTC support... ");
+                if (!JanusModule.isWebrtcSupported()) {
                     setIsWebrtcSupported(false);
                 } else {
                     setIsWebrtcSupported(true);
                 }
 
-                janus = new JanusJS(
+                janus = new JanusModule(
                     {
-                        server: props.server,
-                        success: function() {
+                        server: server,
+                        success: function () {
                             setJanusInstance(janus);
                             setJanusStatus(JanusStatus.Success);
                         },
-                        error: function(error: string) {
+                        error: function (error: string) {
                             setJanusErrorMsg(error);
                             setJanusInstance(null);
                             setJanusStatus(JanusStatus.Error)
                         },
-                        destroyed: function() {
+                        destroyed: function () {
                             setJanusInstance(null);
                             setJanusStatus(JanusStatus.Destroyed)
                         }
                     });
-            }});
+            }
+        });
 
         return () => {
             try {
@@ -67,7 +63,7 @@ const useJanusHelper = (props: JanusHelperProps) => {
 
             }
         }
-    }, [props.server, props.socketState])
+    }, [server, socketState])
 
     return {
         janusInstance,

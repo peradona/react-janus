@@ -1,29 +1,7 @@
-// import React, {useState} from 'react';
 import { renderHook } from '@testing-library/react-hooks'
 // import { render, screen } from '@testing-library/react';
 import {ConnectionState, JanusStatus} from "../constants";
 import useJanusHelper from "./useJanusHelper";
-
-// const TestUseJanusHelper = () => {
-//     const [socketState, setSocketState] = useState<ConnectionState>(ConnectionState.Connected);
-//     const [server, setServer] = useState<string>("https://stm.centerapp.io:808/stream");
-//     const { janusInstance, janusStatus, isWebrtcSupported } = useJanusHelper({ server, useSocket: false, socketState })
-//
-//     return (
-//         <div>
-//             <div>
-//                 {janusInstance !== null && <a
-//                     className="App-link"
-//                     href="https://reactjs.org"
-//                     target="_blank"
-//                     rel="noopener noreferrer"
-//                 >
-//                     Learn React
-//                 </a>}
-//             </div>
-//         </div>
-//     )
-// }
 
 test('should use janus', () => {
     let server = "https://stm.centerapp.io:8089/stream";

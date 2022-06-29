@@ -19,7 +19,6 @@ export const Breakpoints = {
     desktopWide: 1920,
 }
 
-export const BITRATE = 256000;
 export const FPS_CAPTURE = 25;
 // export const getGridArea = (num: number) => {
 //     let gridArea: string;

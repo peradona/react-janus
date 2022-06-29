@@ -2,7 +2,7 @@
   "name": "react-janus-client-side",
   "description": "Janus react component",
   "author": "Peradona",
-  "version": "0.2.0",
+  "version": "0.2.3",
   "main": "./lib/cjs/index.js",
   "module": "./lib/esm/index.js",
   "types": "./lib/esm/index.d.ts",
@@ -13,10 +13,6 @@
     "build:cjs": "tsc --module commonjs --outDir lib/cjs",
     "prepublishOnly": "yarn build",
     "test": "react-scripts test"
-  },
-  "peerDependencies": {
-    "react": "^16.0.0",
-    "react-dom": "^16.0.0"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^5.16.4",

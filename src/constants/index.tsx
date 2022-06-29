@@ -1,8 +1,11 @@
 export const mainFeedSize = 3;
+export const MAX_FEED_SIZE = 6;
 export const maxPublishers = 10;
 export const otherFeedSize = 1;
 // export const otherFeedSize = 1;
 // export const mainFeedSize = 1;
+
+export const BITRATE = 256000;
 
 export enum ConnectionState {
     None,
@@ -79,6 +82,7 @@ export enum JanusStatus {
 }
 
 export enum MediaDeviceStatus {
+    None = "none",
     Publishing = "publishing",
     Published = "published",
     Unpublished = "unpublished",
