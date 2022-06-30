@@ -1,33 +1,49 @@
-import { renderHook } from '@testing-library/react-hooks'
+import {renderHook} from '@testing-library/react-hooks'
 // import { render, screen } from '@testing-library/react';
-import {ConnectionState, JanusStatus} from "../constants";
-import useJanusHelper from "./useJanusHelper";
+// import {JanusStatus, PType} from "../constants";
+import useVideoRoomHelper from "./useVideoRoomHelper"
 
-test('should use janus', () => {
-    let server = "https://stm.centerapp.io:8089/stream";
-    const { result } = renderHook(() =>
-        useJanusHelper({ server, useSocket: false, socketState: ConnectionState.Connected })
-    )
-
-    expect(result.current.janusStatus).toBe(JanusStatus.Error);
-    expect(result.current.isWebrtcSupported).toBe(false);
+const originalError = console.error;
+beforeAll(() => {
+    console.error = (...args) => {
+        if (/Warning: ReactDOM.render is no longer supported in React 18./.test(args[0])) {
+            return;
+        }
+        originalError.call(console, ...args);
+    };
 });
 
-test("janus initial success", () => {
-    function Janus (options: any) {
-        options.success()
-    }
-    Janus.init = function (op: any) {
-        op.callback();
-    }
-    Janus.isWebrtcSupported = () => {
-        return true;
-    }
+describe("janus attach videoroom plugin", () => {
+    it("attach videoroom plugin", () => {
+        function Janus(options: any) {
+            options.success()
+        }
+        Janus.init = function (op: any) {
+            op.callback();
+        }
+        Janus.isWebrtcSupported = () => {
+            return true;
+        }
+        Janus.randomString = (digit: number) => {
+            return digit.toString();
+        }
+        Janus.prototype.attach = function (params: any) {
+            params.success({ plugin: "this is plugin"});
+        }
 
-    let server = "https://stm.centerapp.io:8089/stream";
-    const { result } = renderHook(() =>
-        useJanusHelper({ server, useSocket: false, socketState: ConnectionState.Connected, JanusModule: Janus })
-    )
-    expect(result.current.janusStatus).toBe(JanusStatus.Success);
-    expect(result.current.isWebrtcSupported).toBe(true);
+        // let janusInstance = new (Janus as any)({server: "server", success: () => {}});
+
+        const {result} = renderHook(() =>
+            useVideoRoomHelper({
+                feedRef: null,
+                maxFeedSize: 10,
+                myVideoRef: null,
+                JanusModule: Janus,
+            })
+        )
+        expect(result.current.videoOpaqueId).toBe("videoroom-12")
+        // expect(result.current.videoPlugin.plugin).toBe("this is plugin")
+
+    })
+
 });

@@ -2,7 +2,7 @@
   "name": "react-janus-client-side",
   "description": "Janus react component",
   "author": "Peradona",
-  "version": "0.2.3",
+  "version": "0.2.8",
   "main": "./lib/cjs/index.js",
   "module": "./lib/esm/index.js",
   "types": "./lib/esm/index.d.ts",

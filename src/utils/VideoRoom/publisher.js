@@ -14,39 +14,39 @@ export const attachVideoRoom = (janus, opaqueId, room, secret, pin, username, is
             opaqueId: opaqueId,
             success: (pluginHandle) => {
                 pubPlugin = pluginHandle;
-                window.Janus.log("  -- This is a publisher/manager ss");
+                // window.Janus.log("  -- This is a publisher/manager ss");
                 callback(pubPlugin, "success", true);
             },
             error: (error) => {
-                window.Janus.log("  -- Error attaching plugin...", error);
+                // window.Janus.log("  -- Error attaching plugin...", error);
                 callback(pubPlugin, "error", error);
             },
             consentDialog: (on) => {
-                window.Janus.debug("Consent dialog should be " + (on ? "on" : "off") + " now");
+                // window.Janus.debug("Consent dialog should be " + (on ? "on" : "off") + " now");
             },
             mediaState: (medium, on) => {
-                window.Janus.log("Janus " + (on ? "started" : "stopped") + " receiving our " + medium);
+                // window.Janus.log("Janus " + (on ? "started" : "stopped") + " receiving our " + medium);
                 callback(pubPlugin, "mediaState", on);
             },
             webrtcState: (on) => {
-                window.Janus.log("Janus says our WebRTC PeerConnection is " + (on ? "up" : "down") + " now");
+                // window.Janus.log("Janus says our WebRTC PeerConnection is " + (on ? "up" : "down") + " now");
                 callback(pubPlugin, "webrtcState", on);
             },
             onmessage: (msg, jsep) => {
-                window.Janus.debug(" ::: Got a message (publisher) :::");
-                window.Janus.debug(msg);
-
-                window.Janus.log("Got message", msg);
+                // window.Janus.debug(" ::: Got a message (publisher) :::");
+                // window.Janus.debug(msg);
+                //
+                // window.Janus.log("Got message", msg);
 
                 const event = msg.videoroom;
                 if (event) {
                     if (event === "joined") {
-                        window.Janus.log("Successfully joined room " + msg["room"] + " with ID " + msg["id"]);
+                        // window.Janus.log("Successfully joined room " + msg["room"] + " with ID " + msg["id"]);
                         callback(pubPlugin, "joined", msg)
                     } else if (event === "joining") {
                         callback(pubPlugin, "joining", msg)
                     } else if (event === "destroyed") {
-                        window.Janus.warn("The room has been destroyed!");
+                        // window.Janus.warn("The room has been destroyed!");
                         callback(pubPlugin, "destroyed", event);
                     } else if (event === "event") {
                         if (msg.error) {
@@ -67,24 +67,24 @@ export const attachVideoRoom = (janus, opaqueId, room, secret, pin, username, is
                 }
 
                 if (jsep) {
-                    window.Janus.debug("Handling SDP as well...");
-                    window.Janus.debug(jsep);
+                    // window.Janus.debug("Handling SDP as well...");
+                    // window.Janus.debug(jsep);
                     pubPlugin.handleRemoteJsep({jsep: jsep});
                     // Check if any of the media we wanted to publish has
                     // been rejected (e.g., wrong or unsupported codec)
                     let audio = msg["audio_codec"];
                     if (myStream && myStream.getAudioTracks() && myStream.getAudioTracks().length > 0 && !audio) {
                         // Audio has been rejected
-                        window.Janus.log("Our audio stream has been rejected, viewers won't hear us");
+                        // window.Janus.log("Our audio stream has been rejected, viewers won't hear us");
                     }
                     let video = msg["video_codec"];
                     if (myStream && myStream.getVideoTracks() && myStream.getVideoTracks().length > 0 && !video) {
-                        window.Janus.log("Our video stream has been rejected, viewers won't see us");
+                        // window.Janus.log("Our video stream has been rejected, viewers won't see us");
                     }
                 }
             },
             onlocalstream: (stream) => {
-                window.Janus.debug(" ::: Got a local stream :::");
+                // window.Janus.debug(" ::: Got a local stream :::");
                 myStream = stream;
                 callback(pubPlugin, "onlocalstream", stream);
             },
@@ -92,15 +92,15 @@ export const attachVideoRoom = (janus, opaqueId, room, secret, pin, username, is
                 // The publisher stream is sendonly, we don't expect anything here
             },
             ondata: function (data) {
-                window.Janus.debug("We got data from the DataChannel!");
+                // window.Janus.debug("We got data from the DataChannel!");
                 callback(pubPlugin, "ondata", data);
             },
             ondataopen: function (data) {
-                window.Janus.log("The DataChannel is available!");
+                // window.Janus.log("The DataChannel is available!");
                 callback(pubPlugin, "ondataopen", data);
             },
             oncleanup: function () {
-                window.Janus.log(" ::: Got a cleanup notification: we are unpublished now :::");
+                // window.Janus.log(" ::: Got a cleanup notification: we are unpublished now :::");
                 callback(pubPlugin, "oncleanup");
             }
         }
@@ -490,16 +490,16 @@ export const publishOwnFeed = (pubPlugin, useVideo = true, useAudio = true, data
             simulcast: simulcast,
 
             success: function (jsep) {
-                window.Janus.debug("Got publisher SDP!");
+                // window.Janus.debug("Got publisher SDP!");
                 console.log("Publish own feed success");
-                window.Janus.debug(jsep);
+                // window.Janus.debug(jsep);
                 let publish = {request: "configure", audio: useAudio, video: true, bitrate: bitrate};
 
                 pubPlugin.send({message: publish, jsep: jsep});
                 callback("success", jsep);
             },
             error: function (error) {
-                window.Janus.debug("Publisher Error!", error);
+                // window.Janus.debug("Publisher Error!", error);
                 callback("error", error);
                 // setTimeout(() => {
                 //     publishOwnFeed(pubPlugin, true, false, data, bitrate, simulcast);
@@ -519,16 +519,16 @@ export const publishStreamFeed = (pubPlugin, stream, useVideo = true, useAudio =
             simulcast: simulcast,
 
             success: function (jsep) {
-                window.Janus.debug("Got publisher SDP!");
+                // window.Janus.debug("Got publisher SDP!");
                 console.log("Publish own feed success");
-                window.Janus.debug(jsep);
+                // window.Janus.debug(jsep);
                 let publish = {request: "configure", audio: useAudio, video: true, bitrate: bitrate};
 
                 pubPlugin.send({message: publish, jsep: jsep});
                 callback("success", jsep);
             },
             error: function (error) {
-                window.Janus.debug("Publisher Error!", error);
+                // window.Janus.debug("Publisher Error!", error);
                 callback("error", error);
                 // setTimeout(() => {
                 //     publishOwnFeed(pubPlugin, true, false, data, bitrate, simulcast);

@@ -24,6 +24,15 @@ import useJanusHelper from "./useJanusHelper";
 //         </div>
 //     )
 // }
+const originalError = console.error;
+beforeAll(() => {
+    console.error = (...args) => {
+        if (/Warning: ReactDOM.render is no longer supported in React 18./.test(args[0])) {
+            return;
+        }
+        originalError.call(console, ...args);
+    };
+});
 
 test('should use janus', () => {
     let server = "https://stm.centerapp.io:8089/stream";

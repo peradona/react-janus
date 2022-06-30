@@ -1,268 +1,38 @@
 import {useEffect, useReducer} from 'react';
-import {BITRATE, JanusStatus, MediaDeviceStatus, PluginStatus, PType} from "../constants";
-import {attachVideoRoom, publishOwnFeed, publishStreamFeed} from "../utils/VideoRoom/publisher";
+import {BITRATE, MediaDeviceStatus, PluginStatus} from "../constants";
+import {attachVideoRoom, joinVideoRoom, publishOwnFeed, publishStreamFeed} from "../utils/VideoRoom/publisher";
 import {isShareFeed} from "../utils/janus.utils";
 import {attachVideoRoomSubscriber, subscribeRemoteFeed} from "../utils/VideoRoom/subscriber";
 import Janus from "../utils/janus";
+import {VideoEventType} from "../store/actions/videoRoom";
+import {initialVideoState, videoRoomReducer} from "../store/reducers/videoRoom";
 
 type VideoRoomHelperProps = {
-    readyToInitPlugin: boolean
-    janusInstance: any
-    janusStatus: JanusStatus
-    janusRoom: number | string
-    defaultCam: boolean
+    // readyToInitPlugin: boolean
+    // janusInstance: any
+    // janusStatus: JanusStatus
+    // janusRoom: number | string
+    // defaultCam: boolean
     myVideoRef?: any
     feedRef: any
     JanusModule?: any
     maxFeedSize?: number
-    pType?: PType
-}
-
-type VideoPublisher = {
-    id: string
-    display: string
-    audio_codec: any
-    video_codec: any
-}
-
-type VideoUserMedia = {
-    userMediaStatus: MediaDeviceStatus;
-    errorEvent: any;
-    errorMsg: string;
-}
-
-type RemoteFeed = {
-    remoteFeed: any
-    id: any;
-    rfid: any;
-    videoTracks: boolean;
+    // pType?: PType
 }
 
 let feedStreams: any = [];
 let localStream: any = null;
 
-enum VideoEventType {
-    SUCCESS = 'success',
-    ATTACHED = 'attached',
-    JOINED = 'joined',
-    PUBLISHERS = 'publishers',
-    LEAVING = 'leaving',
-    UNPUBLISHED = 'unpublished',
-    WEBRTC_STATE = 'webrtcState',
-    ERROR = 'error',
-    ERROR_EVENT = 'error_event',
-    // VIDEO_ERROR = 'error event',
-    ON_DATA_OPEN = 'ondataopen',
-    ON_DATA = 'ondata',
-    JOINING = 'joining',
-    ON_CLEAN_UP = 'oncleanup',
-    DESTROYED = 'destroyed',
-
-    SET = 'set',
-    VIDEO_PUBLISHING = 'video_publishing',
-    VIDEO_UNPUBLISHED = 'video_unpublished',
-    VIDEO_SUCCESS = 'video_success',
-    VIDEO_ERROR = 'video_error',
-
-    UPDATE_FEED = 'update_feed_data',
-    REMOVE_FEED = 'remove_feed'
-}
-
-interface VideoRoomAction {
-    type: VideoEventType;
-    payload?: any;
-}
-
-interface VideoRoomState {
-    videoPlugin: any;
-    videoOpaqueId: string;
-    vdoPluginStatus: PluginStatus;
-    myVideoId: string;
-    myPrivateVideoId: string;
-    webrtcState: boolean;
-    mediaState: boolean;
-    publishers: VideoPublisher[];
-    readyToPublish: boolean;
-    remoteFeeds: RemoteFeed[];
-    // feedData: any[];
-    joined: boolean;
-    // shareFeed: any;
-    shareFeedId: any;
-    joiningEvent: any;
-    leavingEvent: any;
-    dataEvent: any;
-    errorEvent: any;
-    videoUserMedia: VideoUserMedia
-    // videoUserMedia: MediaDeviceStatus;
-    // videoErrorEvent: any;
-    // videoErrorMsg: string;
-    dataChannel: boolean;
-    isCleanUp: boolean;
-}
-
-const initialState = {
-    videoPlugin: null,
-    videoOpaqueId: "",
-    vdoPluginStatus: PluginStatus.None,
-    myVideoId: "",
-    myPrivateVideoId: "string",
-    webrtcState: false,
-    mediaState: false,
-    publishers: [],
-    readyToPublish: false,
-    remoteFeeds: [],
-    // feedData: [],
-    joined: false,
-    // shareFeed: null,
-    shareFeedId: null,
-    joiningEvent: null,
-    leavingEvent: null,
-    dataEvent: null,
-    errorEvent: null,
-    // videoUserMedia: MediaDeviceStatus.None,
-    // videoErrorEvent: null,
-    // videoErrorMsg: "",
-    videoUserMedia: {userMediaStatus: MediaDeviceStatus.None, errorEvent: null, errorMsg: ""},
-    dataChannel: false,
-    isCleanUp: false,
-};
-
-const videoRoomReducer = (state: VideoRoomState, {type, payload}: VideoRoomAction) => {
-    switch (type) {
-        //Video plugin event
-        case VideoEventType.SUCCESS:
-            return {
-                ...state,
-                vdoPluginStatus: PluginStatus.Attached
-            };
-        case VideoEventType.ATTACHED:
-            return {
-                ...state,
-                vdoPluginStatus: PluginStatus.Attached
-            };
-        case VideoEventType.DESTROYED:
-            return {
-                ...state,
-                vdoPluginStatus: PluginStatus.Destroyed
-            }
-        case VideoEventType.ERROR:
-            return {
-                ...state,
-                vdoPluginStatus: PluginStatus.Error,
-                errorEvent: payload
-            }
-
-        // Msg Event
-        case VideoEventType.JOINED:
-            return {
-                ...state,
-                myVideoId: payload.id,
-                myPrivateVideoId: payload.private_id,
-                joined: true,
-                publishers: payload.publishers ? payload.publishers : state.publishers
-            }
-        case VideoEventType.WEBRTC_STATE:
-            return {
-                ...state,
-                webrtcState: payload
-            }
-
-        //video user media
-        case VideoEventType.VIDEO_PUBLISHING:
-            return {
-                ...state,
-                videoUserMedia: {
-                    userMediaStatus: MediaDeviceStatus.Publishing
-                }
-            }
-        case VideoEventType.VIDEO_SUCCESS:
-            return {
-                ...state,
-                videoUserMedia: {
-                    userMediaStatus: MediaDeviceStatus.Published
-                }
-            }
-        case VideoEventType.VIDEO_UNPUBLISHED:
-            return {
-                ...state,
-                videoUserMedia: {
-                    userMediaStatus: MediaDeviceStatus.Unpublished
-                }
-            }
-        case VideoEventType.VIDEO_ERROR:
-            return {
-                ...state,
-                videoUserMedia: {
-                    userMediaStatus: MediaDeviceStatus.Error,
-                    errorEvent: payload.errorEvent,
-                    errorMsg: payload.errorMsg
-                }
-            }
-
-
-        case VideoEventType.UPDATE_FEED:
-            return {
-                ...state,
-                feedData: updateFeedData(state.remoteFeeds, payload)
-            }
-        case VideoEventType.REMOVE_FEED:
-            return {
-                ...state,
-                feedData: state.remoteFeeds.filter(item => item.rfid !== payload)
-            }
-        case VideoEventType.LEAVING:
-            return {
-                ...state,
-                feedData: state.remoteFeeds.filter(item => item.rfid !== payload.leaving),
-                shareFeedId: ((sf: any) => sf && sf === payload.leaving ? null : sf),
-                leavingEvent: payload
-            }
-        case VideoEventType.UNPUBLISHED:
-            return {
-                ...state,
-                feedData: state.remoteFeeds.filter(item => item.rfid !== payload.unpublished),
-                shareFeedId: ((sf: any) => sf && sf === payload.unpublished ? null : sf),
-            }
-        case VideoEventType.SET:
-            return {
-                ...state,
-                [payload.key]: payload.value,
-            };
-        default:
-            return state;
-    }
-};
-
-const updateFeedData = (remoteFeeds: any[], data: any) => {
-    let found = remoteFeeds.find((fs: any) => fs.id === data.id);
-
-    if (found) {
-        return remoteFeeds.map(obj => {
-            if (obj.id === data.id) {
-                return {...obj, ...data};
-            }
-            return obj;
-        })
-    } else {
-        return [...remoteFeeds, data]
-    }
-};
-
-// const mediaDeviceReducer = (state: any, { type, payload }: any) => {
-//     switch (type) {
-//
-//     }
-// }
 
 const useVideoRoomHelper = ({
-                                readyToInitPlugin,
-                                janusInstance,
-                                janusStatus,
+                                // readyToInitPlugin,
+                                // janusInstance,
+                                // janusStatus,
                                 // maxFeedSize = MAX_FEED_SIZE,
-                                janusRoom,
+                                // janusRoom,
                                 // defaultCam,
                                 feedRef,
-                                pType,
+                                // pType,
                                 myVideoRef,
                                 JanusModule = Janus
                             }: VideoRoomHelperProps) => {
@@ -273,16 +43,15 @@ const useVideoRoomHelper = ({
         myVideoId,
         myPrivateVideoId,
         videoUserMedia,
+        readyToPublish,
         // videoErrorEvent,
         // videoErrorMsg,
         webrtcState,
         mediaState,
         publishers,
-        readyToPublish,
+        // readyToPublish,
         remoteFeeds,
-        // feedData,
         joined,
-        // shareFeed,
         shareFeedId,
         joiningEvent,
         leavingEvent,
@@ -290,29 +59,21 @@ const useVideoRoomHelper = ({
         errorEvent,
         dataChannel,
         isCleanUp,
-    }, dispatch] = useReducer(videoRoomReducer, initialState);
+    }, dispatch] = useReducer(videoRoomReducer, initialVideoState);
 
     useEffect(() => {
-        const videoOpaqueId: string = "videoroom-" + JanusModule.randomString(12);
-        dispatch({type: VideoEventType.SET, payload: {key: videoOpaqueId, value: videoOpaqueId}});
+        const videoId: string = "videoroom-" + JanusModule.randomString(12);
+        dispatch({type: VideoEventType.SET, payload: {key: "videoOpaqueId", value: videoId}});
 
         return () => {
             clearData();
         }
     }, [])
 
-    // useEffect(() => {
-    //     setReadyToPublish((videoUserMedia === MediaDeviceStatus.Unpublished || videoUserMedia === MediaDeviceStatus.Error) && !webrtcState && joined);
-    // }, [videoUserMedia, webrtcState, joined])
-
     useEffect(() => {
-        if (!janusInstance || !videoOpaqueId || janusStatus !== JanusStatus.Success || !readyToInitPlugin || !pType) return;
-        if (pType === PType.Publisher) {
-            attachPublisherPlugin(janusInstance, videoOpaqueId);
-        } else if (pType === PType.Subscriber) {
-            attachSubscriberPlugin(janusInstance, videoOpaqueId);
-        }
-    }, [janusInstance, janusStatus, videoOpaqueId, readyToInitPlugin, pType])
+        let data = (videoUserMedia.userMediaStatus === MediaDeviceStatus.Unpublished || videoUserMedia.userMediaStatus === MediaDeviceStatus.Error) && !webrtcState && joined;
+        dispatch({type: VideoEventType.SET, payload: {key: "readyToPublish", value: data}});
+    }, [videoUserMedia, webrtcState, joined])
 
     const clearData = () => {
         feedStreams = [];
@@ -339,15 +100,15 @@ const useVideoRoomHelper = ({
     }
 
     const attachSubscriberPlugin = (janusInstance: any, videoOpaqueId: string) => {
-        dispatch({ type: VideoEventType.SET, payload: { key: vdoPluginStatus, value: PluginStatus.Attaching }});
+        dispatch({type: VideoEventType.SET, payload: {key: "vdoPluginStatus", value: PluginStatus.Attaching}});
         attachVideoRoomSubscriber(janusInstance, videoOpaqueId, null, null, null, null, null, null,
             (videoPlugin: any, eventType: any, data: any) => {
-                dispatch({ type: VideoEventType.SET, payload: { key: videoPlugin, value: videoPlugin}})
+                dispatch({type: VideoEventType.SET, payload: {key: "videoPlugin", value: videoPlugin}})
                 if (eventType === "success") {
-                    dispatch({ type: VideoEventType.SUCCESS })
+                    dispatch({type: VideoEventType.SUCCESS})
                 } else if (eventType === "attached") {
                     JanusModule.log("attach new video...", data);
-                    dispatch({ type: VideoEventType.ATTACHED })
+                    dispatch({type: VideoEventType.ATTACHED})
                 } else if (eventType === "onremotestream") {
                     if (feedRef.current[(videoPlugin.id).toString()]) {
                         JanusModule.attachMediaStream(feedRef.current[(videoPlugin.id).toString()], data);
@@ -374,22 +135,22 @@ const useVideoRoomHelper = ({
                         feedStreams.push({id: videoPlugin.id, stream: data});
                     }
                 } else if (eventType === "webrtcState") {
-                    dispatch({ type: VideoEventType.WEBRTC_STATE, payload: data });
+                    dispatch({type: VideoEventType.WEBRTC_STATE, payload: data});
                 } else if (eventType === "error") {
-                    dispatch({ type: VideoEventType.SET, payload: { key: errorEvent, value: data }});
+                    dispatch({type: VideoEventType.SET, payload: {key: "errorEvent", value: data}});
                 } else if (eventType === "error_event") {
                     //TODO
                     // setVideoErrorEvent(data);
-                    dispatch({ type: VideoEventType.SET, payload: { key: errorEvent, value: data }});
+                    dispatch({type: VideoEventType.SET, payload: {key: "errorEvent", value: data}});
                 } else if (eventType === "ondataopen") {
-                    dispatch({ type: VideoEventType.SET, payload: { key: dataChannel, value: data }});
+                    dispatch({type: VideoEventType.SET, payload: {key: "dataChannel", value: data}});
                 } else if (eventType === "ondata") {
-                    dispatch({ type: VideoEventType.SET, payload: { key: dataEvent, value: data}});
+                    dispatch({type: VideoEventType.SET, payload: {key: "dataEvent", value: data}});
                 } else if (eventType === "joining") {
-                    dispatch({ type: VideoEventType.SET, payload: { key: joiningEvent, value: data}});
+                    dispatch({type: VideoEventType.SET, payload: {key: "joiningEvent", value: data}});
                 } else if (eventType === "leaving") {
                     const {leaving} = data;
-                    dispatch({ type: VideoEventType.LEAVING, payload: data});
+                    dispatch({type: VideoEventType.LEAVING, payload: data});
 
                     let removeFeed = feedStreams.filter((feed: any) => feed.id == leaving)
 
@@ -400,31 +161,31 @@ const useVideoRoomHelper = ({
                         feedStreams.splice(feedStreams.indexOf(removeFeed), 1)
                     }
                 } else if (eventType === "oncleanup") {
-                    dispatch({ type: VideoEventType.SET, payload: { key: isCleanUp, value: true}});
+                    dispatch({type: VideoEventType.SET, payload: {key: "isCleanUp", value: true}});
                 } else if (eventType === "destroyed") {
                     videoPlugin.detach();
-                    dispatch({ type: VideoEventType.DESTROYED})
+                    dispatch({type: VideoEventType.DESTROYED})
                 }
             }
         );
     }
 
     const attachPublisherPlugin = (janusInstance: any, videoOpaqueId: string) => {
-        dispatch({ type: VideoEventType.SET, payload: { key: vdoPluginStatus, value: PluginStatus.Attaching }});
+        dispatch({type: VideoEventType.SET, payload: {key: "vdoPluginStatus", value: PluginStatus.Attaching}});
         attachVideoRoom(janusInstance, videoOpaqueId, null, null, null, null, true,
             (videoPlugin: any, eventType: any, data: any) => {
-                dispatch({ type: VideoEventType.SET, payload: { key: videoPlugin, value: videoPlugin}})
+                dispatch({type: VideoEventType.SET, payload: {key: "videoPlugin", value: videoPlugin}})
 
                 if (eventType === "success") {
-                    dispatch({ type: VideoEventType.SUCCESS })
+                    dispatch({type: VideoEventType.SUCCESS})
                 } else if (eventType === "joined") {
-                    dispatch({ type: VideoEventType.JOINED, payload: data})
+                    dispatch({type: VideoEventType.JOINED, payload: data})
                 } else if (eventType === "publishers") {
                     const {publishers} = data;
-                    dispatch({ type: VideoEventType.SET, payload: { key: publishers, value: publishers}})
+                    dispatch({type: VideoEventType.SET, payload: {key: "publishers", value: publishers}})
                 } else if (eventType === "leaving") {
                     const {leaving} = data;
-                    dispatch({ type: VideoEventType.LEAVING, payload: data});
+                    dispatch({type: VideoEventType.LEAVING, payload: data});
                     // One of the publishers has gone away?
                     let removeFeed = feedStreams.filter((feed: any) => feed.id == leaving)
 
@@ -439,11 +200,11 @@ const useVideoRoomHelper = ({
 
                     if (unpublished === "ok") {
                         videoPlugin.hangup();
-                        dispatch({ type: VideoEventType.VIDEO_UNPUBLISHED});
+                        dispatch({type: VideoEventType.VIDEO_UNPUBLISHED});
                         return;
                     }
 
-                    dispatch({ type: VideoEventType.UNPUBLISHED, payload: data })
+                    dispatch({type: VideoEventType.UNPUBLISHED, payload: data})
 
                     let removeFeed = feedStreams.filter((feed: any) => feed.id == unpublished)
                     //Remove feed
@@ -452,7 +213,7 @@ const useVideoRoomHelper = ({
                         feedStreams.splice(feedStreams.indexOf(removeFeed), 1)
                     }
                 } else if (eventType === "webrtcState") {
-                    dispatch({ type: VideoEventType.WEBRTC_STATE, payload: data });
+                    dispatch({type: VideoEventType.WEBRTC_STATE, payload: data});
                 } else if (eventType === "onlocalstream") {
                     localStream = data;
                     if (myVideoRef.current) {
@@ -461,23 +222,23 @@ const useVideoRoomHelper = ({
                         myVideoRef.current.controls = false;
                     }
                 } else if (eventType === "ondataopen") {
-                    dispatch({ type: VideoEventType.SET, payload: { key: dataChannel, value: data }});
+                    dispatch({type: VideoEventType.SET, payload: {key: "dataChannel", value: data}});
                 } else if (eventType === "mediaState") {
-                    dispatch({ type: VideoEventType.SET, payload: { key: mediaState, value: data }});
+                    dispatch({type: VideoEventType.SET, payload: {key: "mediaState", value: data}});
                 } else if (eventType === "error") {
                     // setErrorEvent(data);
                     // dispatch({ type: VideoEventType.SET, payload: { key: errorEvent, value: data }});
-                    dispatch({ type: VideoEventType.ERROR, payload: data})
+                    dispatch({type: VideoEventType.ERROR, payload: data})
                 } else if (eventType === "error event") {
                     dispatch({type: VideoEventType.VIDEO_ERROR, payload: {errorEvent: data, errorMsg: data.error}});
                 } else if (eventType === "joining") {
-                    dispatch({ type: VideoEventType.SET, payload: { key: joiningEvent, value: data }});
+                    dispatch({type: VideoEventType.SET, payload: {key: "joiningEvent", value: data}});
                 } else if (eventType === "destroyed") {
                     videoPlugin.detach();
-                    dispatch({ type: VideoEventType.DESTROYED})
+                    dispatch({type: VideoEventType.DESTROYED})
                 } else if (eventType === "oncleanup") {
-                    dispatch({ type: VideoEventType.SET, payload: { key: isCleanUp, value: true}});
-                    dispatch({ type: VideoEventType.VIDEO_UNPUBLISHED});
+                    dispatch({type: VideoEventType.SET, payload: {key: "isCleanUp", value: true}});
+                    dispatch({type: VideoEventType.VIDEO_UNPUBLISHED});
                 }
             }
         );
@@ -488,25 +249,29 @@ const useVideoRoomHelper = ({
     //     setShareFeed(shareFeedId);
     // }, [shareFeedId])
 
-    useEffect(() => {
-        if (!janusInstance
-            || janusStatus !== JanusStatus.Success
-            || !janusRoom
-            || !myPrivateVideoId
-        ) return;
+    // useEffect(() => {
+    //     if (!janusInstance
+    //         || janusStatus !== JanusStatus.Success
+    //         || !janusRoom
+    //         || !myPrivateVideoId
+    //     ) return;
+    //
+    //     publishers.forEach(function (publisher: any) {
+    //         let id = publisher["id"];
+    //         let display = publisher["display"];
+    //         let audio = publisher["audio_codec"];
+    //         let video = publisher["video_codec"];
+    //
+    //         subscribeRemoteFeed(janusInstance, videoOpaqueId, janusRoom, id, myPrivateVideoId, display, audio, video, remoteFeedCallback);
+    //     });
+    // }, [janusInstance, publishers, janusRoom, myPrivateVideoId])
 
-        publishers.forEach(function (publisher: any) {
-            let id = publisher["id"];
-            let display = publisher["display"];
-            let audio = publisher["audio_codec"];
-            let video = publisher["video_codec"];
+    const subscribeFeed = (janusInstance: any, janusRoom: number | string, id: number | string, display: string, audio: any, video: any) => {
+        subscribeRemoteFeed(janusInstance, videoOpaqueId, janusRoom, id, myPrivateVideoId, display, audio, video, JanusModule, remoteFeedCallback);
+    }
 
-            subscribeRemoteFeed(janusInstance, videoOpaqueId, janusRoom, id, myPrivateVideoId, display, audio, video, remoteFeedCallback);
-        });
-    }, [janusInstance, publishers, janusRoom, myPrivateVideoId])
-
-    const subscribeFeed = (id: number | string, display: string, audio: any, video: any) => {
-        subscribeRemoteFeed(janusInstance, videoOpaqueId, janusRoom, id, myPrivateVideoId, display, audio, video, remoteFeedCallback);
+    const joinRoom = (room: number | string, display: string) => {
+        joinVideoRoom(videoPlugin, room, display);
     }
 
     const remoteFeedCallback = (_remoteFeed: any, eventType: string, data: any) => {
@@ -522,7 +287,7 @@ const useVideoRoomHelper = ({
             })
 
             if (isShareFeed(_remoteFeed.rfdisplay)) {
-                dispatch({ type: VideoEventType.SET, payload: { key: shareFeedId, value: _remoteFeed.rfid}});
+                dispatch({type: VideoEventType.SET, payload: {key: "shareFeedId", value: _remoteFeed.rfid}});
             }
         } else if (eventType === "onremotestream") {
             if (feedRef.current[(_remoteFeed.id).toString()]) {
@@ -565,28 +330,29 @@ const useVideoRoomHelper = ({
     return {
         feedStreams,
         localStream,
-        // state,
         videoPlugin,
         remoteFeeds,
+        videoOpaqueId,
         vdoPluginStatus,
         videoUserMedia,
         readyToPublish,
+        publishers,
         webrtcState,
         myVideoId,
         joined,
-        dataEvent,
         isDataOpen: dataChannel,
         myPrivateVideoId,
-        // shareFeed,
-        // videoErrorMsg,
         mediaState,
-        // feedData,
         shareFeedId,
         joiningEvent,
         leavingEvent,
+        dataEvent,
         isCleanUp,
         errorEvent,
         // videoErrorEvent,
+        attachSubscriberPlugin,
+        attachPublisherPlugin,
+        joinVideoRoom: joinRoom,
         publishCam,
         publishStream,
         subscribeFeed,

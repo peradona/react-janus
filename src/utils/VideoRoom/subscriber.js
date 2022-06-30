@@ -1,7 +1,7 @@
 import Janus from '../janus.utils';
 import {useCallback} from "react";
 
-export const subscribeRemoteFeed = (janus, opaqueId, room, id, pvtId, display, audio, video, callback) => {
+export const subscribeRemoteFeed = (janus, opaqueId, room, id, pvtId, display, audio, video, JanusModule, callback) => {
     let remoteFeed = null;
 
     janus.attach(
@@ -12,9 +12,9 @@ export const subscribeRemoteFeed = (janus, opaqueId, room, id, pvtId, display, a
 				remoteFeed = pluginHandle;
 				remoteFeed.simulcastStarted = false;
 				//@ts-ignore
-				window.Janus.log("Plugin attached! (" + remoteFeed.getPlugin() + ", id=" + remoteFeed.getId() + ")");
+				JanusModule.log("Plugin attached! (" + remoteFeed.getPlugin() + ", id=" + remoteFeed.getId() + ")");
 				//@ts-ignore
-                window.Janus.log("  -- This is a subscriber");
+				JanusModule.log("  -- This is a subscriber");
                 
 				let subscribe = {
                     "request": "join", 
@@ -27,8 +27,8 @@ export const subscribeRemoteFeed = (janus, opaqueId, room, id, pvtId, display, a
 					"offer_video": true,
                 };
 				//@ts-ignore
-				if(window.Janus.webRTCAdapter.browserDetails.browser === "safari" &&
-						(video === "vp9" || (video === "vp8" && !window.Janus.safariVp8))) {
+				if(JanusModule.webRTCAdapter.browserDetails.browser === "safari" &&
+						(video === "vp9" || (video === "vp8" && !JanusModule.safariVp8))) {
 					if(video)
 						video = video.toUpperCase()
 					subscribe["offer_video"] = false;
@@ -38,12 +38,12 @@ export const subscribeRemoteFeed = (janus, opaqueId, room, id, pvtId, display, a
 			},
 			error: (error) => {
 				//@ts-ignore
-                window.Janus.error("  -- Error attaching plugin...", error);
+                JanusModule.error("  -- Error attaching plugin...", error);
                 callback(remoteFeed, "error", error);
 			},
 			onmessage: (msg, jsep) =>  {
-				window.Janus.debug(" ::: Got a message (subscriber) :::");
-                window.Janus.debug(msg);
+				JanusModule.debug(" ::: Got a message (subscriber) :::");
+                JanusModule.debug(msg);
 
 				const event = msg.videoroom;
 
@@ -56,8 +56,8 @@ export const subscribeRemoteFeed = (janus, opaqueId, room, id, pvtId, display, a
 				}
 
 				if(jsep) {
-					window.Janus.debug("SUBS: Handling SDP as well...");
-                    window.Janus.debug(jsep);
+					JanusModule.debug("SUBS: Handling SDP as well...");
+                    JanusModule.debug(jsep);
 					// Answer and attach
 					remoteFeed.createAnswer(
 						{
@@ -66,20 +66,20 @@ export const subscribeRemoteFeed = (janus, opaqueId, room, id, pvtId, display, a
 							// (obviously only works if the publisher offered them in the first place)
 							media: { audioSend: false, videoSend: false, data: true },	// We want recvonly audio/video
 							success: function(jsep) {
-								window.Janus.debug("Got SDP!");
-								window.Janus.debug(jsep);
+								JanusModule.debug("Got SDP!");
+								JanusModule.debug(jsep);
 								let body = { "request": "start", "room": room };
 								remoteFeed.send({"message": body, "jsep": jsep});
 							},
 							error: function(error) {
-								window.Janus.error("WebRTC error:", error);
+								JanusModule.error("WebRTC error:", error);
 							}
 						});
 				}
 				
 			},
 			webrtcState: (on) => {
-				window.Janus.log("Janus says this WebRTC PeerConnection (feed #" + remoteFeed.rfid + ") is " + (on ? "up" : "down") + " now");
+				JanusModule.log("Janus says this WebRTC PeerConnection (feed #" + remoteFeed.rfid + ") is " + (on ? "up" : "down") + " now");
 				callback(remoteFeed, "webrtcState", on);
 			},
 			onlocalstream: (stream) => {
@@ -89,11 +89,11 @@ export const subscribeRemoteFeed = (janus, opaqueId, room, id, pvtId, display, a
                 callback(remoteFeed, "onremotestream", stream);
 			},
 			ondata: (data) => {
-				window.Janus.debug("We got data from the DataChannel!");
+				JanusModule.debug("We got data from the DataChannel!");
 				callback(remoteFeed, "ondata", data);
 			},
 			ondataopen: (data) => {
-				window.Janus.log("The DataChannel is available!");
+				JanusModule.log("The DataChannel is available!");
 				callback(remoteFeed, "ondataopen", data);
 			},
 			oncleanup: () => {
@@ -113,21 +113,13 @@ export const attachVideoRoomSubscriber = (janus, opaqueId, room, id, pvtId, disp
 			success: (pluginHandle) => {
 				remoteFeed = pluginHandle;
 				remoteFeed.simulcastStarted = false;
-				//@ts-ignore
-				window.Janus.log("Plugin attached! (" + remoteFeed.getPlugin() + ", id=" + remoteFeed.getId() + ")");
-				//@ts-ignore
-				window.Janus.log("  -- This is a subscriber");
 
 				callback(remoteFeed, "success", true)
 			},
 			error: (error) => {
-				//@ts-ignore
-				window.Janus.error("  -- Error attaching plugin...", error);
 				callback(remoteFeed, "error", error);
 			},
 			onmessage: (msg, jsep) =>  {
-				window.Janus.debug(" ::: Got a message (subscriber) :::");
-				window.Janus.debug(msg);
 
 				const event = msg.videoroom;
 
@@ -148,8 +140,6 @@ export const attachVideoRoomSubscriber = (janus, opaqueId, room, id, pvtId, disp
 				}
 
 				if(jsep) {
-					window.Janus.debug("SUBS: Handling SDP as well...");
-					window.Janus.debug(jsep);
 					// Answer and attach
 					remoteFeed.createAnswer(
 						{
@@ -158,20 +148,18 @@ export const attachVideoRoomSubscriber = (janus, opaqueId, room, id, pvtId, disp
 							// (obviously only works if the publisher offered them in the first place)
 							media: { audioSend: false, videoSend: false, data: true },	// We want recvonly audio/video
 							success: function(jsep) {
-								window.Janus.debug("Got SDP!");
-								window.Janus.debug(jsep);
 								let body = { "request": "start", "room": room };
 								remoteFeed.send({"message": body, "jsep": jsep});
 							},
 							error: function(error) {
-								window.Janus.error("WebRTC error:", error);
+								// JanusModule.error("WebRTC error:", error);
 							}
 						});
 				}
 
 			},
 			webrtcState: (on) => {
-				window.Janus.log("Janus says this WebRTC PeerConnection (feed #" + remoteFeed.rfid + ") is " + (on ? "up" : "down") + " now");
+				console.log("Janus says this WebRTC PeerConnection (feed #" + remoteFeed.rfid + ") is " + (on ? "up" : "down") + " now");
 				callback(remoteFeed, "webrtcState", on);
 			},
 			onlocalstream: (stream) => {
@@ -181,15 +169,15 @@ export const attachVideoRoomSubscriber = (janus, opaqueId, room, id, pvtId, disp
 				callback(remoteFeed, "onremotestream", stream);
 			},
 			ondata: (data) => {
-				window.Janus.debug("We got data from the DataChannel!");
+				// JanusModule.debug("We got data from the DataChannel!");
 				callback(remoteFeed, "ondata", data);
 			},
 			ondataopen: (data) => {
-				window.Janus.log("The DataChannel is available!");
+				// JanusModule.log("The DataChannel is available!");
 				callback(remoteFeed, "ondataopen", data);
 			},
 			oncleanup: () => {
-				window.Janus.log("Clean up!");
+				// JanusModule.log("Clean up!");
 				callback(remoteFeed, "oncleanup");
 			}
 		});

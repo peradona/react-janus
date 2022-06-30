@@ -16,6 +16,7 @@ const useJanusHelper = ({ server, useSocket, socketState, JanusModule = Janus}: 
     const [janusErrorMsg, setJanusErrorMsg] = useState<string>();
 
     const [isWebrtcSupported, setIsWebrtcSupported] = useState<boolean>();
+    const [readyToInitPlugin, setReadyToInitPlugin] = useState<boolean>();
 
     //Initial janus
     useEffect(() => {
@@ -41,16 +42,19 @@ const useJanusHelper = ({ server, useSocket, socketState, JanusModule = Janus}: 
                         server: server,
                         success: function () {
                             setJanusInstance(janus);
+                            setReadyToInitPlugin(true);
                             setJanusStatus(JanusStatus.Success);
                         },
                         error: function (error: string) {
                             setJanusErrorMsg(error);
                             setJanusInstance(null);
                             setJanusStatus(JanusStatus.Error)
+                            setReadyToInitPlugin(false);
                         },
                         destroyed: function () {
                             setJanusInstance(null);
                             setJanusStatus(JanusStatus.Destroyed)
+                            setReadyToInitPlugin(false);
                         }
                     });
             }
@@ -69,7 +73,8 @@ const useJanusHelper = ({ server, useSocket, socketState, JanusModule = Janus}: 
         janusInstance,
         janusStatus,
         janusErrorMsg,
-        isWebrtcSupported
+        isWebrtcSupported,
+        readyToInitPlugin,
     }
 }
 
